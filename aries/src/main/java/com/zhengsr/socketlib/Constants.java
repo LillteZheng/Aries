@@ -1,19 +1,21 @@
-package com.zhengsr.socketlib.udp;
+package com.zhengsr.socketlib;
 
 /**
  * created by zhengshaorui on 2019/8/9
  * Describe: udp 参数常亮
  */
-public class UDPConstants {
+public class Constants {
 
     /**
      * UDP 广播端口
      */
-    public static final int PORT_BROADCAST = 63330;
+    public static final int PORT_BROADCAST = 30023;
     /**
      * 提供者，回送消息的端口
      */
-    public static final int PORT_CLIENT_RESPONSE = 30402;
+    public static final int PORT_CLIENT_RESPONSE = 30034;
+
+    public static int  TCP_PORT = 30045;
     /**
      * udp 广播
      */

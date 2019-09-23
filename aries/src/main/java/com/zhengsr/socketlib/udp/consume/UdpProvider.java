@@ -1,14 +1,16 @@
-package com.zhengsr.socketlib.udp;
+package com.zhengsr.socketlib.udp.consume;
 
 import android.os.Build;
-import android.util.Log;
 
 import com.zhengsr.socketlib.CloseUtils;
+import com.zhengsr.socketlib.Constants;
 import com.zhengsr.socketlib.udp.callback.AbsUdp;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author by  zhengshaorui on 2019/9/19
@@ -17,24 +19,24 @@ import java.nio.ByteBuffer;
 public class UdpProvider extends AbsUdp{
     private static final String TAG = "UdpProvider";
     private HandleSearcher mProvider;
+    private ExecutorService mExecutorService;
 
-    public static UdpProvider create(){
-        return new UdpProvider();
-    }
-
-    private UdpProvider(){
-
-    }
-
-    public void start(){
+    public void start(int port){
+        mExecutorService = Executors.newSingleThreadExecutor() ;
         //监听广播端口
-        mProvider = new HandleSearcher(UDPConstants.PORT_BROADCAST);
-        mProvider.start();
+        if (port == -1){
+            port = Constants.PORT_BROADCAST;
+        }
+        mProvider = new HandleSearcher(port);
+        mExecutorService.execute(mProvider);
     }
     @Override
     public void stop() {
         if (mProvider != null){
             mProvider.exit();
+        }
+        if (mExecutorService != null){
+            mExecutorService.shutdownNow();
         }
     }
 
@@ -43,7 +45,7 @@ public class UdpProvider extends AbsUdp{
         int port;
         DatagramSocket ds;
         boolean done;
-        byte[] bytes = new byte[5];
+        byte[] bytes = new byte[6];
         ByteBuffer receiver;
         public HandleSearcher(int port) {
             this.port = port;
@@ -53,8 +55,7 @@ public class UdpProvider extends AbsUdp{
         public void run() {
             super.run();
             try {
-                ds = new DatagramSocket();
-                Log.d(TAG, "zsr 开始监听");
+                ds = new DatagramSocket(port);
                 DatagramPacket packet = new DatagramPacket(bytes,bytes.length);
                 while (!done){
                     ds.receive(packet);
@@ -62,11 +63,9 @@ public class UdpProvider extends AbsUdp{
                     byte cmd = receiver.get();
                     int port = receiver.getInt();
 
-                        Log.d(TAG, "zsr 收到数据: "+cmd+" "+port);
-                    if (cmd == UDPConstants.REQUEST && port > 0){
-                        ByteBuffer responseBuffer = ByteBuffer.allocate(128);
-                        responseBuffer.put(UDPConstants.RESPONSE);
-                        responseBuffer.putInt(1234);
+                    if (cmd == Constants.REQUEST && port > 0){
+                        ByteBuffer responseBuffer = ByteBuffer.allocate(20);
+                        responseBuffer.put(Constants.RESPONSE);
                         responseBuffer.put(Build.MODEL.getBytes());
                         DatagramPacket responsePacket = new DatagramPacket(
                                 responseBuffer.array(),
@@ -78,7 +77,7 @@ public class UdpProvider extends AbsUdp{
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+              //  e.printStackTrace();
             }finally {
                 CloseUtils.close(ds);
             }

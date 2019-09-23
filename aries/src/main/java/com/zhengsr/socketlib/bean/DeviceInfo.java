@@ -17,4 +17,13 @@ public class DeviceInfo {
         this.port = port;
         this.info = data;
     }
+
+    @Override
+    public String toString() {
+        return "DeviceInfo{" +
+                "ip='" + ip + '\'' +
+                ", port=" + port +
+                ", info='" + info + '\'' +
+                '}';
+    }
 }

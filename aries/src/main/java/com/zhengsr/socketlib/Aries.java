@@ -3,6 +3,7 @@ package com.zhengsr.socketlib;
 import android.os.Handler;
 import android.os.Looper;
 
+import com.zhengsr.socketlib.nio.entrance.NioRequest;
 import com.zhengsr.socketlib.udp.UdpRequest;
 
 /**
@@ -13,20 +14,19 @@ import com.zhengsr.socketlib.udp.UdpRequest;
 public class Aries {
     public static Handler HANDLER = new Handler(Looper.getMainLooper());
     private static UdpRequest mUdpRequest;
-    public static UdpRequest port(int port){
-        mUdpRequest = new UdpRequest().port(port);
+    private static NioRequest mNioReuqest;
+    public static UdpRequest udp(){
+        if (mUdpRequest == null) {
+            mUdpRequest = new UdpRequest();
+        }
         return mUdpRequest;
     }
 
+    public static NioRequest get(){
+        if (mNioReuqest == null){
+            mNioReuqest = new NioRequest();
+        }
+        return mNioReuqest;
+    }
 
-    public static void stopProvider(){
-        if (mUdpRequest != null) {
-            mUdpRequest.stopProvider();
-        }
-    }
-    public static void stopSearcher(){
-        if (mUdpRequest != null) {
-            mUdpRequest.stopSearch();
-        }
-    }
 }
