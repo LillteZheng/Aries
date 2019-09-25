@@ -172,10 +172,6 @@ public class NioServer {
 
         }
 
-        @Override
-        public void onError(String errorMsg) {
-            Lgg.d("onError"+errorMsg);
-        }
 
         @Override
         public synchronized void onConnected(DataHandle client, DeviceInfo info) {

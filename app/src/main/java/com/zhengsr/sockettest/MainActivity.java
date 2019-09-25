@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     public void send(View view) {
         String msg = mEditText.getText().toString();
         Aries.get().sendServerBroMsg(msg);
-        sb.append("你发送了: "+msg);
+        sb.append("你发送了: "+msg).append("\n");
         mTextView.setText(sb.toString());
         mEditText.setText("");
     }
