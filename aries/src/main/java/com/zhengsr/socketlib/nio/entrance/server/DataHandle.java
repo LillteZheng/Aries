@@ -5,6 +5,7 @@ import android.os.Build;
 import com.zhengsr.socketlib.CloseUtils;
 import com.zhengsr.socketlib.Lgg;
 import com.zhengsr.socketlib.bean.DeviceInfo;
+import com.zhengsr.socketlib.nio.core.Consumer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -23,7 +24,6 @@ import java.util.concurrent.Executors;
 public class DataHandle {
     private DataClientListener mListener;
     private SocketChannel mChannel;
-    private final ClientReadHandler mReadHandler;
     private final WriteHandler mWriteHandler;
     private final DeviceInfo mInfo;
 
@@ -35,8 +35,17 @@ public class DataHandle {
         // 读的 selector key
         Selector readSelector = Selector.open();
         channel.register(readSelector, SelectionKey.OP_READ);
-        mReadHandler = new ClientReadHandler(readSelector);
-        mReadHandler.start();
+        new Consumer(channel, new Consumer.OnChannelListener() {
+            @Override
+            public void onMeassage(String msg) {
+                mListener.onNewMsg(DataHandle.this,msg);
+            }
+
+            @Override
+            public void onChannelClose(SocketChannel channel) {
+                closeSelf();
+            }
+        });
 
         //写得 selector
         Selector writeSelector = Selector.open();
@@ -59,71 +68,7 @@ public class DataHandle {
     }
 
 
-    /**
-     * 读监听
-     */
-    class ClientReadHandler extends Thread {
-        Selector selector;
-        boolean done;
-        ByteBuffer buffer;
 
-        public ClientReadHandler(Selector selector) {
-            this.selector = selector;
-            buffer = ByteBuffer.allocate(256);
-        }
-
-        @Override
-        public void run() {
-            super.run();
-            try {
-                while (!done) {
-                    if (selector.select() == 0) {
-                        if (done) {
-                            break;
-                        }
-                        continue;
-                    }
-                    Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-                    Lgg.d("what?: " + iterator.hasNext());
-                    while (iterator.hasNext()) {
-                        if (done) {
-                            break;
-                        }
-                        SelectionKey key = iterator.next();
-                        iterator.remove();
-                        if (key.isReadable()) {
-                            SocketChannel channel = (SocketChannel) key.channel();
-                            //先清空数据
-                            buffer.clear();
-
-                            //拿到数据
-                            int read = channel.read(buffer);
-                            if (read > 0) {
-                                //buffer.flip();
-                                //强行去掉换行符,后面再优化
-                                String msg = new String(buffer.array(), 0, buffer.position() - 1);
-                                mListener.onNewMsg(DataHandle.this, msg);
-                            } else {
-                                mListener.onError("客户端已经无法读取信息");
-                                DataHandle.this.closeSelf();
-                            }
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                exit();
-            }
-
-        }
-
-
-        public void exit() {
-            done = true;
-            CloseUtils.close(selector);
-        }
-    }
 
     class WriteHandler {
         Selector selector;
@@ -155,7 +100,7 @@ public class DataHandle {
             String msg;
 
             public sendSync(String msg) {
-                this.msg = msg + "\n";
+                this.msg = msg+"\n";
             }
 
             @Override
@@ -199,7 +144,6 @@ public class DataHandle {
     }
 
     public void exit() {
-        mReadHandler.exit();
         mWriteHandler.exit();
         CloseUtils.close(mChannel);
     }

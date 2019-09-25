@@ -76,7 +76,12 @@ public class NioClient {
                     String msg = br.readLine();
                     if (msg == null){
                        // System.out.println("连接断开");
-                        mListener.serverDisconnect(mInfo);
+                        Aries.HANDLER.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                mListener.serverDisconnect(mInfo);
+                            }
+                        });
                         break;
                     }
 

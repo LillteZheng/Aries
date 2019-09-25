@@ -11,6 +11,7 @@ import com.zhengsr.socketlib.Aries;
 import com.zhengsr.socketlib.bean.DeviceInfo;
 import com.zhengsr.socketlib.nio.callback.TcpClientListener;
 import com.zhengsr.socketlib.udp.callback.DeviceListener;
+import com.zhengsr.socketlib.utils.StringUtils;
 
 import java.util.List;
 
@@ -23,7 +24,6 @@ public class MainActivity extends AppCompatActivity implements DeviceListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Log.d(TAG, "zsr search: ");
     }
 
     public void search(View view) {
@@ -63,8 +63,8 @@ public class MainActivity extends AppCompatActivity implements DeviceListener {
     }
 
     public void send(View view) {
-        String msg = mEditText.getText().toString();
-        Aries.get().sendClientMsg(msg);
+        String msg = mEditText.getText().toString().trim();
+        Aries.get().sendClientMsg(StringUtils.removeBlank(msg));
         sb.append("你发送了: "+msg).append("\n");
         mTextView.setText(sb.toString());
         mEditText.setText("");
@@ -99,7 +99,7 @@ public class MainActivity extends AppCompatActivity implements DeviceListener {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    sb.append("服务端信息: " + msg).append("\n");
+                    sb.append("服务端信息: " + msg);
                     mTextView.setText(sb.toString());
                 }
             });

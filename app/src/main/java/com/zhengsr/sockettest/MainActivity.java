@@ -11,6 +11,10 @@ import com.zhengsr.socketlib.bean.DeviceInfo;
 import com.zhengsr.socketlib.nio.callback.TcpClientListener;
 import com.zhengsr.socketlib.nio.callback.TcpServerListener;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class MainActivity extends AppCompatActivity {
 
     private EditText mEditText;
@@ -27,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
                 .startServer();
         mEditText = findViewById(R.id.edittext);
         mTextView = findViewById(R.id.textview);
+
+
     }
 
     @Override
@@ -39,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     public void send(View view) {
         String msg = mEditText.getText().toString();
         Aries.get().sendServerBroMsg(msg);
-        sb.append("你发送了: "+msg).append("\n");
+        sb.append("你发送了: "+msg);
         mTextView.setText(sb.toString());
         mEditText.setText("");
     }

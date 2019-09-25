@@ -83,7 +83,6 @@ public class UdpSearcher extends AbsUdp{
         }else{
             responsePort += 1;
         }
-        Log.d(TAG, "zsr listener: "+responsePort);
         CountDownLatch startDownLatch = new CountDownLatch(1);
         mResponseThread = new ResponseListener(responsePort, startDownLatch, receiveDownLatch);
         mResponseThread.start();
