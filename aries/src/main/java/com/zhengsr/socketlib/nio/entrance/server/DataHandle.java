@@ -1,21 +1,10 @@
 package com.zhengsr.socketlib.nio.entrance.server;
 
-import android.os.Build;
-
-import com.zhengsr.socketlib.CloseUtils;
-import com.zhengsr.socketlib.Lgg;
 import com.zhengsr.socketlib.bean.DeviceInfo;
 import com.zhengsr.socketlib.nio.core.Consumer;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.text.BreakIterator;
-import java.util.Iterator;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * @author by  zhengshaorui on 2019/9/23

@@ -1,10 +1,7 @@
 package com.zhengsr.socketlib.nio.entrance;
 
-import android.os.Build;
-
 import com.zhengsr.socketlib.Aries;
-import com.zhengsr.socketlib.CloseUtils;
-import com.zhengsr.socketlib.Lgg;
+import com.zhengsr.socketlib.utils.CloseUtils;
 import com.zhengsr.socketlib.bean.DeviceInfo;
 import com.zhengsr.socketlib.nio.callback.TcpClientListener;
 
@@ -16,7 +13,6 @@ import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 

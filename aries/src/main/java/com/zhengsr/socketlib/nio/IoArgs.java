@@ -8,9 +8,9 @@ import java.nio.channels.SocketChannel;
  * @author by  zhengshaorui on 2019/9/26
  * Describe:基于封装的 bytebuffer
  */
-public class IoBuffer {
+public class IoArgs {
 
-    ByteBuffer buffer = ByteBuffer.allocate(5);
+    ByteBuffer buffer = ByteBuffer.allocate(256);
 
     /**
      * 从channel中，读数据到buffer
@@ -27,9 +27,11 @@ public class IoBuffer {
         //切换到读模式，这样才能拿到数据
         buffer.flip();
         //直到读取完毕为止
+        int len = 0;
         while (buffer.hasRemaining()) {
             //接着把数据写到 channel 去
             return channel.write(buffer);
+
         }
         return -1;
     }

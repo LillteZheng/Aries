@@ -1,4 +1,4 @@
-package com.zhengsr.socketlib.nio.core;
+package com.zhengsr.socketlib.nio.core.selector;
 
 import android.content.Context;
 import android.util.AttributeSet;

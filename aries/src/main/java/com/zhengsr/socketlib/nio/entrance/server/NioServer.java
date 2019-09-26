@@ -1,11 +1,9 @@
 package com.zhengsr.socketlib.nio.entrance.server;
 
-import com.zhengsr.socketlib.CloseUtils;
-import com.zhengsr.socketlib.Lgg;
+import com.zhengsr.socketlib.Aries;
+import com.zhengsr.socketlib.utils.CloseUtils;
 import com.zhengsr.socketlib.bean.DeviceInfo;
 import com.zhengsr.socketlib.nio.callback.TcpServerListener;
-import com.zhengsr.socketlib.nio.core.IoSelector;
-import com.zhengsr.socketlib.nio.core.selector.IoProviderSelector;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -143,10 +141,15 @@ public class NioServer {
     class DataListener implements DataHandle.DataClientListener{
 
         @Override
-        public synchronized void onSelfClose(DataHandle client, DeviceInfo info) {
+        public synchronized void onSelfClose(DataHandle client,final DeviceInfo info) {
             mDataHandletList.remove(client);
-            mListener.onClientDisconnect(info);
-            mListener.onClientCount(mDataHandletList.size());
+            Aries.HANDLER.post(new Runnable() {
+                @Override
+                public void run() {
+                    mListener.onClientDisconnect(info);
+                    mListener.onClientCount(mDataHandletList.size());
+                }
+            });
         }
 
         @Override
@@ -174,10 +177,15 @@ public class NioServer {
 
 
         @Override
-        public synchronized void onConnected(DataHandle client, DeviceInfo info) {
+        public synchronized void onConnected(DataHandle client,final DeviceInfo info) {
             mDataHandletList.add(client);
-            mListener.onClientCount(mDataHandletList.size());
-            mListener.onClientConnected(info);
+            Aries.HANDLER.post(new Runnable() {
+                @Override
+                public void run() {
+                    mListener.onClientCount(mDataHandletList.size());
+                    mListener.onClientConnected(info);
+                }
+            });
         }
     }
 

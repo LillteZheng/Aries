@@ -1,4 +1,4 @@
-package com.zhengsr.socketlib;
+package com.zhengsr.socketlib.utils;
 
 import android.util.Log;
 

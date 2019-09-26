@@ -1,6 +1,6 @@
 package com.zhengsr.socketlib.nio.core.selector;
 
-import com.zhengsr.socketlib.CloseUtils;
+import com.zhengsr.socketlib.utils.CloseUtils;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;

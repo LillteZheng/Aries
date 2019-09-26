@@ -1,9 +1,7 @@
 package com.zhengsr.socketlib.udp.consume;
 
-import android.util.Log;
-
 import com.zhengsr.socketlib.Aries;
-import com.zhengsr.socketlib.CloseUtils;
+import com.zhengsr.socketlib.utils.CloseUtils;
 import com.zhengsr.socketlib.bean.DeviceInfo;
 import com.zhengsr.socketlib.Constants;
 import com.zhengsr.socketlib.udp.callback.AbsUdp;

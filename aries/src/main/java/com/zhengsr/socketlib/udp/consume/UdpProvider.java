@@ -2,7 +2,7 @@ package com.zhengsr.socketlib.udp.consume;
 
 import android.os.Build;
 
-import com.zhengsr.socketlib.CloseUtils;
+import com.zhengsr.socketlib.utils.CloseUtils;
 import com.zhengsr.socketlib.Constants;
 import com.zhengsr.socketlib.udp.callback.AbsUdp;
 

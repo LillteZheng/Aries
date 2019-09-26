@@ -1,17 +1,14 @@
 package com.zhengsr.socketlib.nio.core;
 
-import com.zhengsr.socketlib.CloseUtils;
-import com.zhengsr.socketlib.Lgg;
-import com.zhengsr.socketlib.nio.IoBuffer;
+import com.zhengsr.socketlib.nio.core.selector.IoSelector;
+import com.zhengsr.socketlib.utils.CloseUtils;
+import com.zhengsr.socketlib.nio.IoArgs;
 import com.zhengsr.socketlib.nio.core.selector.IProvider;
-import com.zhengsr.socketlib.nio.entrance.server.DataHandle;
 import com.zhengsr.socketlib.utils.StringUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author by  zhengshaorui on 2019/9/24
@@ -22,8 +19,7 @@ public class Consumer implements Closeable{
     private  IProvider mProvider;
     private SocketChannel mChannel;
     private OnChannelListener mListener;
-    private IoBuffer mReadBuffer = new IoBuffer();
-    private IoBuffer mWriteBuffer = new IoBuffer();
+    private IoArgs mIoBuffer = new IoArgs();
     public void setUp(SocketChannel channel, OnChannelListener listener) throws IOException {
         mListener = listener;
         mChannel = channel;
@@ -52,9 +48,9 @@ public class Consumer implements Closeable{
         public void canProviderInput() {
             try {
 
-                if (mReadBuffer.read(mChannel) > 0) {
+                if (mIoBuffer.read(mChannel) > 0) {
                     //强行去掉换行符,后面再优化
-                    String msg = mReadBuffer.string();
+                    String msg = mIoBuffer.string();
                     msg = StringUtils.removeBlank(msg);
                     if (msg.length() > 0){
                         mListener.onMeassage(msg);
@@ -77,7 +73,7 @@ public class Consumer implements Closeable{
             if (msg != null) {
 
                 try {
-                    int write = mWriteBuffer.write(mChannel,msg);
+                    int write = mIoBuffer.write(mChannel,msg);
                     if (write < 0) {
                         close();
                     }
