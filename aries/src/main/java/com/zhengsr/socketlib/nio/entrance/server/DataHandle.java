@@ -8,7 +8,7 @@ import java.nio.channels.SocketChannel;
 
 /**
  * @author by  zhengshaorui on 2019/9/23
- * Describe: 处理 read 和 write 两种 selector 数据处理
+ * Describe: 处理 readFrom 和 writeTo 两种 selector 数据处理
  */
 public class DataHandle extends Consumer {
     private DataClientListener mListener;

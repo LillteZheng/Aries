@@ -57,7 +57,7 @@ public class IoProviderSelector implements IProvider {
      */
     private void startRead() {
         //开个线程用来拿到 selectionkey
-        Thread readthread = new Thread("read selector thread"){
+        Thread readthread = new Thread("readFrom selector thread"){
             @Override
             public void run() {
                 super.run();
@@ -93,7 +93,7 @@ public class IoProviderSelector implements IProvider {
      */
     private void startWrite() {
         //开个线程用来拿到 selectionkey
-        Thread readthread = new Thread("write selector thread"){
+        Thread readthread = new Thread("writeTo selector thread"){
             @Override
             public void run() {
                 super.run();

@@ -1,5 +1,9 @@
 package com.zhengsr.socketlib.nio.core;
 
+import com.zhengsr.socketlib.nio.core.async.SendDispatcherAsync;
+import com.zhengsr.socketlib.nio.core.callback.Sender;
+import com.zhengsr.socketlib.nio.core.packet.SendPacket;
+import com.zhengsr.socketlib.nio.core.packet.box.StringSendPacket;
 import com.zhengsr.socketlib.nio.core.selector.IoSelector;
 import com.zhengsr.socketlib.utils.CloseUtils;
 import com.zhengsr.socketlib.nio.IoArgs;
@@ -19,14 +23,18 @@ public class Consumer implements Closeable{
     private  IProvider mProvider;
     private SocketChannel mChannel;
     private OnChannelListener mListener;
-    private IoArgs mIoBuffer = new IoArgs();
+    private IoArgs mIoArgs = new IoArgs();
+    private SendDispatcherAsync mSendDispatcher;
+    private Sender mSender;
+
     public void setUp(SocketChannel channel, OnChannelListener listener) throws IOException {
         mListener = listener;
         mChannel = channel;
         channel.configureBlocking(false);
 
-        mProvider = IoSelector.getProvider();
 
+        mSender = new ChannelProviderProcessor(channel,IoSelector.getProvider());
+        mSendDispatcher = new SendDispatcherAsync(mSender);
         readNextMsg();
     }
 
@@ -37,20 +45,24 @@ public class Consumer implements Closeable{
        mProvider.registerInput(mChannel,inputRunnable);
     }
 
+    /**
+     * 发送字符串
+     * @param msg
+     */
     public void sendMsg(String msg){
-        outputRunnable.setAttach(msg);
-        mProvider.registerOutput(mChannel,outputRunnable);
+        SendPacket packet = new StringSendPacket(msg);
+        mSendDispatcher.sendPacket(packet);
     }
 
 
     IProvider.HandleInputRunnable inputRunnable = new IProvider.HandleInputRunnable() {
         @Override
         public void canProviderInput() {
-            try {
+            /*try {
 
-                if (mIoBuffer.read(mChannel) > 0) {
+                if (mIoArgs.readFrom(mChannel) > 0) {
                     //强行去掉换行符,后面再优化
-                    String msg = mIoBuffer.string();
+                   // String msg = mIoArgs.string();
                     msg = StringUtils.removeBlank(msg);
                     if (msg.length() > 0){
                         mListener.onMeassage(msg);
@@ -62,27 +74,10 @@ public class Consumer implements Closeable{
                 }
             } catch (IOException e) {
                 e.printStackTrace();
-            }
+            }*/
         }
     };
 
-    IProvider.HandleOutputRunnable outputRunnable = new IProvider.HandleOutputRunnable() {
-        @Override
-        public void canProviderOutput() {
-            String msg = (String) getAttach()+"\n";
-            if (msg != null) {
-
-                try {
-                    int write = mIoBuffer.write(mChannel,msg);
-                    if (write < 0) {
-                        close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    };
 
     @Override
     public void close() throws IOException {
