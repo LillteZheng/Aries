@@ -1,6 +1,8 @@
 package com.zhengsr.socketlib.nio.core;
 
+import com.zhengsr.socketlib.nio.core.async.ReceiveDispatcherAsync;
 import com.zhengsr.socketlib.nio.core.async.SendDispatcherAsync;
+import com.zhengsr.socketlib.nio.core.callback.Receiver;
 import com.zhengsr.socketlib.nio.core.callback.Sender;
 import com.zhengsr.socketlib.nio.core.packet.SendPacket;
 import com.zhengsr.socketlib.nio.core.packet.box.StringSendPacket;
@@ -25,7 +27,9 @@ public class Consumer implements Closeable{
     private OnChannelListener mListener;
     private IoArgs mIoArgs = new IoArgs();
     private SendDispatcherAsync mSendDispatcher;
+    private ReceiveDispatcherAsync mReceiveDispatcher;
     private Sender mSender;
+    private Receiver mReceiver;
 
     public void setUp(SocketChannel channel, OnChannelListener listener) throws IOException {
         mListener = listener;
@@ -33,17 +37,13 @@ public class Consumer implements Closeable{
         channel.configureBlocking(false);
 
 
-        mSender = new ChannelProviderProcessor(channel,IoSelector.getProvider());
+        ChannelProviderProcessor processor = new ChannelProviderProcessor(channel,IoSelector.getProvider());
+        mSender = processor;
+        mReceiver = processor;
         mSendDispatcher = new SendDispatcherAsync(mSender);
-        readNextMsg();
+        mReceiveDispatcher = new ReceiveDispatcherAsync(mReceiver);
     }
 
-    /**
-     * 读数据
-     */
-    private void readNextMsg() {
-       mProvider.registerInput(mChannel,inputRunnable);
-    }
 
     /**
      * 发送字符串
@@ -55,28 +55,7 @@ public class Consumer implements Closeable{
     }
 
 
-    IProvider.HandleInputRunnable inputRunnable = new IProvider.HandleInputRunnable() {
-        @Override
-        public void canProviderInput() {
-            /*try {
 
-                if (mIoArgs.readFrom(mChannel) > 0) {
-                    //强行去掉换行符,后面再优化
-                   // String msg = mIoArgs.string();
-                    msg = StringUtils.removeBlank(msg);
-                    if (msg.length() > 0){
-                        mListener.onMeassage(msg);
-                    }
-                    //读取成功，再读取下调
-                    readNextMsg();
-                } else {
-                    close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }*/
-        }
-    };
 
 
     @Override
