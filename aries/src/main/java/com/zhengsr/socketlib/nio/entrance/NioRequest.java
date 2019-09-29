@@ -72,7 +72,7 @@ public class NioRequest {
 
     public void sendClientMsg(String msg) {
         if (mNioClient != null) {
-            mNioClient.send(msg);
+            mNioClient.sendMsg(msg);
         }
     }
 

@@ -12,12 +12,16 @@ public class StringReceivePacket extends ReceivePacket {
     final byte[] buff;
     public StringReceivePacket(int len){
         buff = new byte[len];
-        length = buff.length;
+        length = len;
     }
 
     @Override
     public void save(byte[] bytes, int count) {
         System.arraycopy(bytes,0,buff,position,count);
         position += count;
+    }
+
+    public String string(){
+        return new String(buff);
     }
 }

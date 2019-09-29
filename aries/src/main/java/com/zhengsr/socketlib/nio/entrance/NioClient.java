@@ -1,9 +1,16 @@
 package com.zhengsr.socketlib.nio.entrance;
 
+import android.net.IpPrefix;
+
 import com.zhengsr.socketlib.Aries;
+import com.zhengsr.socketlib.nio.IoArgs;
+import com.zhengsr.socketlib.nio.core.Consumer;
+import com.zhengsr.socketlib.nio.core.selector.IoProviderSelector;
+import com.zhengsr.socketlib.nio.core.selector.IoSelector;
 import com.zhengsr.socketlib.utils.CloseUtils;
 import com.zhengsr.socketlib.bean.DeviceInfo;
 import com.zhengsr.socketlib.nio.callback.TcpClientListener;
+import com.zhengsr.socketlib.utils.Lgg;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,6 +20,7 @@ import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -20,16 +28,18 @@ import java.util.concurrent.Executors;
  * @author by  zhengshaorui on 2019/9/23
  * Describe: Nio 客户端
  */
-public class NioClient {
+public class NioClient extends Consumer{
     private ExecutorService mExecutorService ;
     private TcpClientListener mListener;
-    private ReadHandler mReadHandler;
+    private SocketChannel mChannel;
+
     private DeviceInfo mInfo;
-    private Socket mSocket;
-    private PrintStream mPs;
-
-
     public NioClient(){
+        try {
+            IoSelector.setProvider(new IoProviderSelector());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         mExecutorService = Executors.newSingleThreadExecutor();
     }
     public NioClient listener(TcpClientListener listener){
@@ -41,13 +51,11 @@ public class NioClient {
             @Override
             public void run() {
                 try {
-                    mSocket = new Socket();
-                    int timeout = 3000;
-                    mSocket.connect(new InetSocketAddress(InetAddress.getByName(ip),port),timeout);
-                    connectSuccess(mSocket);
-                    mReadHandler = new ReadHandler(mSocket.getInputStream());
-                    mReadHandler.start();
-                } catch (IOException e) {
+                    mChannel = SocketChannel.open();
+                    mChannel.connect(new InetSocketAddress(InetAddress.getByName(ip),port));
+                    setUp(mChannel);
+                    connectSuccess(mChannel);
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -55,96 +63,51 @@ public class NioClient {
 
     }
 
-    class  ReadHandler extends Thread{
-        private BufferedReader br;
-        private boolean done = false;
-        InputStream stream;
-        public ReadHandler(InputStream inputStream) {
-            this.stream = inputStream;
-            br = new BufferedReader(new InputStreamReader(stream));
-        }
 
-        @Override
-        public void run() {
-            super.run();
-            try {
-                while (!done){
-                    String msg = br.readLine();
-                    if (msg == null){
-                       // System.out.println("连接断开");
-                        Aries.HANDLER.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                mListener.serverDisconnect(mInfo);
-                            }
-                        });
-                        break;
-                    }
 
-                    mListener.onResponse(msg);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }finally {
-                exit();
-            }
-
-        }
-        public void exit(){
-            done = true;
-            //必须关闭 stream，不然socket会被占用
-            CloseUtils.close(stream);
-            CloseUtils.close(br);
+    @Override
+    public void onNewMessage(String msg) {
+        if (mListener != null) {
+            mListener.onResponse(msg);
         }
     }
 
-
-    /**
-     * 接受终端数据，并发送给服务端
-     */
-    public  void send(final String msg){
-        mExecutorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    mPs = new PrintStream(mSocket.getOutputStream());
-                    mPs.println(msg);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
+    @Override
+    public void onChannelClosed(SocketChannel channel) {
+        if (mListener != null) {
+            mListener.serverDisconnect(mInfo);
+        }
     }
 
-    private void connectSuccess(final Socket socket) {
+    private void connectSuccess(final SocketChannel socket) {
         if (mListener != null){
             Aries.HANDLER.post(new Runnable() {
                 @Override
                 public void run() {
-                    String ip = socket.getInetAddress().getHostAddress();
-                    int port = socket.getPort();
+                    String ip = socket.socket().getInetAddress().getHostAddress();
+                    int port = socket.socket().getPort();
                     mInfo = new DeviceInfo();
                     mInfo.ip = ip;
                     mInfo.port = port;
-                    mInfo.info = "server connected";
+                    mInfo.info = "server connect success";
                     mListener.serverConnected(mInfo);
                 }
             });
         }
-
-
     }
 
+
+
     public void stop() {
-        if (mReadHandler != null) {
-            mReadHandler.exit();
+        try {
+            close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         if (mExecutorService != null) {
             mExecutorService.shutdownNow();
         }
-        CloseUtils.close(mPs);
-        CloseUtils.close(mSocket);
+
 
     }
 }

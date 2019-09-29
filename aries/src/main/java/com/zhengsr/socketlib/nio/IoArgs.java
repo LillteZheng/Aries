@@ -12,8 +12,8 @@ import java.nio.channels.SocketChannel;
  * Describe:基于封装的 bytebuffer
  */
 public class IoArgs {
-    private int limit = 256;
-    ByteBuffer buffer = ByteBuffer.allocate(256);
+    private int limit = 5;
+    ByteBuffer buffer = ByteBuffer.allocate(5);
 
     /**
      * 从数组读数据到 bytebuffer
@@ -35,18 +35,18 @@ public class IoArgs {
 
     /**
      * 把 buffer 的数据，写到 byte去
-     * @param offset
      * @return
      */
-    public int writeTo(byte[] bytes,int offset){
+    public int writeTo(byte[] bytes){
         /**
          *  buffer.remaining() 表示 limit - position 之间的大小，读写模式不同
-         *  byte.length = 5, 假如 buffer 已经有 10个数据;
-         *  当数据从 buffer 读取 4 个字节的数据后，remaining  = 6，
-         *  下次数组还能写入到byte的数据应该为 math.min(5-4,6)`
+         *  而这里的写，比较特殊，因为buffer每次的 limit 都是确定的。
+         *  比如有 byte 有 8 个数据，buffer 的大小只有 5，那么第一次需要从byte读取
+         *  5个字节，第二次则需要读 3 个字节，而每次 limit 都被我们限定的，所以这里
+         *  并不需要偏移量来识别
          */
-        int size = Math.min(bytes.length - offset,buffer.remaining());
-        buffer.get(bytes,offset,size);
+        int size = Math.min(bytes.length ,buffer.remaining());
+        buffer.get(bytes,0,size);
         return size;
     }
 
@@ -77,7 +77,7 @@ public class IoArgs {
 
         int length = 0;
         while (buffer.hasRemaining()){
-            int len = channel.read(buffer);
+            int len = channel.write(buffer);
             if (len < 0){
                 throw new EOFException();
             }
@@ -107,6 +107,10 @@ public class IoArgs {
     public int readLength(){
         //读头部的数据信息
         return buffer.getInt();
+    }
+
+    public int capacity() {
+        return buffer.capacity();
     }
 
 

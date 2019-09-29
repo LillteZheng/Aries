@@ -16,17 +16,7 @@ public class DataHandle extends Consumer {
 
     public DataHandle(SocketChannel channel, DataClientListener listener) throws IOException {
         mListener = listener;
-        setUp(channel, new OnChannelListener() {
-            @Override
-            public void onMeassage(String msg) {
-                mListener.onNewMsg(DataHandle.this,msg);
-            }
-
-            @Override
-            public void onChannelClose(SocketChannel channel) {
-                closeSelf();
-            }
-        });
+        setUp(channel);
 
         String ip = channel.socket().getInetAddress().getHostAddress();
         int port = channel.socket().getPort();
@@ -42,13 +32,10 @@ public class DataHandle extends Consumer {
     }
 
 
-
-    /**
-     * 关闭自身
-     */
-    private void closeSelf() {
-        exit();
-        mListener.onSelfClose(this, mInfo);
+    @Override
+    public void onNewMessage(String msg) {
+        super.onNewMessage(msg);
+        mListener.onNewMsg(this,msg);
     }
 
     public void exit() {
@@ -59,6 +46,12 @@ public class DataHandle extends Consumer {
         }
     }
 
+    @Override
+    public void onChannelClosed(SocketChannel channel) {
+        super.onChannelClosed(channel);
+        exit();
+        mListener.onSelfClose(this, mInfo);
+    }
 
     public interface DataClientListener {
         void onSelfClose(DataHandle client, DeviceInfo info);

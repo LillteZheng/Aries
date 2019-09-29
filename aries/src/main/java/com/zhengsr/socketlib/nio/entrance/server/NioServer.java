@@ -1,6 +1,8 @@
 package com.zhengsr.socketlib.nio.entrance.server;
 
 import com.zhengsr.socketlib.Aries;
+import com.zhengsr.socketlib.nio.core.selector.IoProviderSelector;
+import com.zhengsr.socketlib.nio.core.selector.IoSelector;
 import com.zhengsr.socketlib.utils.CloseUtils;
 import com.zhengsr.socketlib.bean.DeviceInfo;
 import com.zhengsr.socketlib.nio.callback.TcpServerListener;
@@ -34,7 +36,13 @@ public class NioServer {
 
 
 
-    public NioServer(){}
+    public NioServer(){
+        try {
+            IoSelector.setProvider(new IoProviderSelector());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 
     public NioServer listener(TcpServerListener listener){

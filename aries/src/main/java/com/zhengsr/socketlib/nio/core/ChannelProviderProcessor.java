@@ -4,7 +4,10 @@ import com.zhengsr.socketlib.nio.IoArgs;
 import com.zhengsr.socketlib.nio.core.callback.Receiver;
 import com.zhengsr.socketlib.nio.core.callback.Sender;
 import com.zhengsr.socketlib.nio.core.selector.IProvider;
+import com.zhengsr.socketlib.utils.CloseUtils;
+import com.zhengsr.socketlib.utils.Lgg;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,9 +24,11 @@ public class ChannelProviderProcessor implements Sender,Receiver {
     private IoArgs.IoArgsEventProcessor mOutputEventProcessor;
     private IoArgs.IoArgsEventProcessor mInputEventProcessor;
     private IoArgs mReceiverArgs;
-    public ChannelProviderProcessor(SocketChannel channel,IProvider provider) {
+    private OnChannelStatusChangedListener mListener;
+    public ChannelProviderProcessor(SocketChannel channel,IProvider provider,OnChannelStatusChangedListener listener) {
         mProvider = provider;
         mChannel = channel;
+        mListener = listener;
     }
 
     @Override
@@ -37,14 +42,21 @@ public class ChannelProviderProcessor implements Sender,Receiver {
     }
 
     @Override
-    public void receiveAsync(IoArgs args, IoArgs.IoArgsEventProcessor processor) throws IOException {
+    public void setProcessorListener(IoArgs.IoArgsEventProcessor processor) {
+        mInputEventProcessor = processor;
+    }
+
+    @Override
+    public void receiveAsync(IoArgs args) throws IOException {
         if (mIsClosed.get()){
             throw  new IOException("current channel is closed");
         }
         mReceiverArgs = args;
-        mInputEventProcessor = processor;
+
         mProvider.registerInput(mChannel,inputRunnable);
     }
+
+
 
 
     IProvider.HandleInputRunnable inputRunnable = new IProvider.HandleInputRunnable() {
@@ -58,13 +70,15 @@ public class ChannelProviderProcessor implements Sender,Receiver {
             processor.onStart(args);
 
             try {
-                if (args.readFrom(mChannel) > 0){
+                int read = args.readFrom(mChannel);
+                if (read > 0){
                     processor.onCompleted(args);
                 }else{
-                    throw new IOException("Cannot readFrom any data!");
+                    throw new IOException("cannot read anymore ");
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                Lgg.d("e.: "+e.toString());
+                close();
             }
         }
     };
@@ -79,20 +93,42 @@ public class ChannelProviderProcessor implements Sender,Receiver {
                 return;
             }
             //拿到一份可消费的 ioargs
-            IoArgs args = (IoArgs) getAttach();
+            IoArgs args =  getAttach();
             IoArgs.IoArgsEventProcessor processor = mOutputEventProcessor;
             processor.onStart(args);
             try {
-                if (args.writeTo(mChannel) > 0){
+                int write = args.writeTo(mChannel);
+                if (write > 0){
                     processor.onCompleted(args);
                 }else{
-                    throw new IOException("Cannot write any data!");
+                   throw new IOException("cannot write anymore ");
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                Lgg.d("已经没法写了: "+e.toString());
+                close();
             }
         }
     };
 
 
+    @Override
+    public void close() {
+        if (mIsClosed.compareAndSet(false,true)){
+            //解除注册
+            mProvider.unRegisterInput(mChannel);
+            mProvider.unRegisterOutput(mChannel);
+
+            //关闭通道
+            CloseUtils.close(mChannel);
+
+            //通知外面
+            if (mListener != null) {
+                mListener.onChannelClosed(mChannel);
+            }
+        }
+    }
+
+    public interface OnChannelStatusChangedListener {
+        void onChannelClosed(SocketChannel channel);
+    }
 }

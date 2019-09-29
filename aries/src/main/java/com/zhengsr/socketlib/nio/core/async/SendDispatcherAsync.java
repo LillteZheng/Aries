@@ -1,28 +1,27 @@
 package com.zhengsr.socketlib.nio.core.async;
 
 import android.os.Build;
+import android.util.Log;
 
 import com.zhengsr.socketlib.nio.IoArgs;
 import com.zhengsr.socketlib.nio.core.callback.Sender;
 import com.zhengsr.socketlib.nio.core.packet.SendPacket;
-import com.zhengsr.socketlib.nio.core.selector.IProvider;
+import com.zhengsr.socketlib.utils.CloseUtils;
+import com.zhengsr.socketlib.utils.Lgg;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.nio.channels.Channel;
-import java.nio.channels.SocketChannel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.zhengsr.socketlib.utils.CloseUtils.close;
-
 /**
  * @author by  zhengshaorui on 2019/9/27
  * Describe:
  */
-public class SendDispatcherAsync {
-
+public class SendDispatcherAsync implements Closeable{
+    private static final String TAG = "SendDispatcherAsync";
     private Queue<SendPacket> mQueue;
     private AtomicBoolean mIsSending = new AtomicBoolean(false);
 
@@ -33,7 +32,7 @@ public class SendDispatcherAsync {
     private int mPosition;
     private Sender mSender;
     private IoArgs mIoArgs = new IoArgs();
-    private SendPacket mPacketTemp;
+    private SendPacket mTempPacket;
     public SendDispatcherAsync(Sender sender) {
         mSender = sender;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
@@ -55,7 +54,7 @@ public class SendDispatcherAsync {
      */
     private void sendNextPacket() {
 
-        SendPacket packet = mPacketTemp = mQueue.poll();
+        SendPacket packet = mTempPacket = mQueue.poll();
         if (packet == null){
             //取消发送状态
             mIsSending.set(false);
@@ -85,7 +84,7 @@ public class SendDispatcherAsync {
             args.writeLength(mTotal);
         }
 
-        byte[] bytes = mPacketTemp.bytes();
+        byte[] bytes = mTempPacket.bytes();
         //把数据写入到buffer中，并通过 args 传递给channel
         int count = args.readFrom(bytes,mPosition);
         mPosition += count;
@@ -103,7 +102,6 @@ public class SendDispatcherAsync {
 
         @Override
         public void onStart(IoArgs args) {
-
         }
 
         @Override
@@ -113,4 +111,12 @@ public class SendDispatcherAsync {
     };
 
 
+    @Override
+    public void close() throws IOException {
+        if (mIsSending.compareAndSet(false,true)) {
+            mIsSending.set(false);
+            mTempPacket = null;
+            mQueue.clear();
+        }
+    }
 }

@@ -14,10 +14,11 @@ import java.io.IOException;
  */
 public class IoSelector {
     private static  IProvider mIProvider;
+    public static void setProvider(IProvider provider){
+        mIProvider = provider;
+    }
+
     public static IProvider getProvider() throws IOException {
-        if (mIProvider == null){
-            mIProvider = new IoProviderSelector();
-        }
         return mIProvider;
     }
 }
