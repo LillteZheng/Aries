@@ -65,32 +65,18 @@ public class SendDispatcherAsync implements Closeable{
         mTotal = packet.length;
         mPosition = 0;
         
-        sendCurrentPacket();
+        sendCurrentPacket(mIoArgs);
     }
     /**
      * 发送真正的数据,在发送之前，先检测是否发送完成
      * 当未发送完成，重新注册即可
      */
-    private void sendCurrentPacket() {
-        //把数据写到 ioargs ,再通过它传递给 provider 去消费
-        IoArgs args = mIoArgs;
-        //先清掉以前的数据
-        args.startWriting();
+    private void sendCurrentPacket(IoArgs args) {
 
         if (mPosition >= mTotal){
             sendNextPacket();
             return;
-        }else if (mPosition == 0){
-            //如果是首包,把长度信息写入
-            args.writeLength(mTotal);
         }
-
-        byte[] bytes = mTempPacket.bytes();
-        //把数据写入到buffer中，并通过 args 传递给channel
-        int count = args.readFrom(bytes,mPosition);
-        mPosition += count;
-        args.finishWriting();
-        //这样就构成了 [header][data+data..] 的形式
         try {
             mSender.sendAsync(args);
         } catch (IOException e) {
@@ -102,13 +88,31 @@ public class SendDispatcherAsync implements Closeable{
     IoArgs.IoArgsEventProcessor ioArgsEventProcessor = new IoArgs.IoArgsEventProcessor() {
 
         @Override
-        public void onStart(IoArgs args) {
+        public IoArgs providerIoArgs() {
+            //把数据写到 ioargs ,再通过它传递给 provider 去消费
+            IoArgs args = mIoArgs;
+            //先清掉以前的数据
+            args.startWriting();
+
+            if (mPosition == 0){
+                //如果是首包,把长度信息写入
+                args.writeLength(mTotal);
+            }
+
+            byte[] bytes = mTempPacket.bytes();
+            //把数据写入到buffer中，并通过 args 传递给channel
+            int count = args.readFrom(bytes,mPosition);
+            mPosition += count;
+            args.finishWriting();
+            //这样就构成了 [header][data+data..] 的形式
+            return args;
         }
 
         @Override
-        public void onCompleted(IoArgs args) {
-            sendCurrentPacket();
+        public void onConsumeCompleted(IoArgs args) {
+            sendCurrentPacket(args);
         }
+
     };
 
 

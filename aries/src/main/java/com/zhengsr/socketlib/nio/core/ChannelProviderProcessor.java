@@ -23,7 +23,6 @@ public class ChannelProviderProcessor implements Sender,Receiver {
     private SocketChannel mChannel;
     private IoArgs.IoArgsEventProcessor mOutputEventProcessor;
     private IoArgs.IoArgsEventProcessor mInputEventProcessor;
-    private IoArgs mReceiverArgs;
     private OnChannelStatusChangedListener mListener;
     public ChannelProviderProcessor(SocketChannel channel,IProvider provider,OnChannelStatusChangedListener listener) {
         mProvider = provider;
@@ -46,7 +45,7 @@ public class ChannelProviderProcessor implements Sender,Receiver {
         if (mIsClosed.get()){
             throw  new IOException("current channel is closed");
         }
-        outputRunnable.setAttach(ioArgs);
+        //outputRunnable.setAttach(ioArgs);
 
         mProvider.registerOutput(mChannel,outputRunnable);
     }
@@ -56,8 +55,6 @@ public class ChannelProviderProcessor implements Sender,Receiver {
         if (mIsClosed.get()){
             throw  new IOException("current channel is closed");
         }
-        mReceiverArgs = args;
-
         mProvider.registerInput(mChannel,inputRunnable);
     }
 
@@ -69,15 +66,14 @@ public class ChannelProviderProcessor implements Sender,Receiver {
         public void canProviderInput() {
 
 
-            IoArgs args = mReceiverArgs;
 
             IoArgs.IoArgsEventProcessor processor = mInputEventProcessor;
-            processor.onStart(args);
+            IoArgs args = processor.providerIoArgs();
 
             try {
                 int read = args.readFrom(mChannel);
                 if (read > 0){
-                    processor.onCompleted(args);
+                    processor.onConsumeCompleted(args);
                 }else{
                     throw new IOException("cannot read anymore ");
                 }
@@ -98,13 +94,13 @@ public class ChannelProviderProcessor implements Sender,Receiver {
                 return;
             }
             //拿到一份可消费的 ioargs
-            IoArgs args =  getAttach();
             IoArgs.IoArgsEventProcessor processor = mOutputEventProcessor;
-            processor.onStart(args);
+            IoArgs args =  processor.providerIoArgs();
+           // processor.onStart(args);
             try {
                 int write = args.writeTo(mChannel);
                 if (write > 0){
-                    processor.onCompleted(args);
+                    processor.onConsumeCompleted(args);
                 }else{
                    throw new IOException("cannot write anymore ");
                 }

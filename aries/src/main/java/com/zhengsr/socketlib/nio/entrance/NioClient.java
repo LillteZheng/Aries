@@ -74,9 +74,14 @@ public class NioClient extends Consumer{
 
     @Override
     public void onChannelClosed(SocketChannel channel) {
-        if (mListener != null) {
-            mListener.serverDisconnect(mInfo);
-        }
+        Aries.HANDLER.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mListener != null) {
+                    mListener.serverDisconnect(mInfo);
+                }
+            }
+        });
     }
 
     private void connectSuccess(final SocketChannel socket) {

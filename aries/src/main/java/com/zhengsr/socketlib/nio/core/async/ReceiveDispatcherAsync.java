@@ -69,8 +69,8 @@ public class ReceiveDispatcherAsync implements Closeable {
 
     IoArgs.IoArgsEventProcessor processor = new IoArgs.IoArgsEventProcessor() {
         @Override
-        public void onStart(IoArgs args) {
-            //在 start 之前，先判断，本次要接收的是长度是多少，比如4个自己的长度信息，还是data的大小
+        public IoArgs providerIoArgs() {
+            IoArgs args = mIoArgs;
             int receiveLength;
             if (mTempPacket == null){
                 receiveLength = 4;
@@ -78,14 +78,17 @@ public class ReceiveDispatcherAsync implements Closeable {
                 receiveLength = Math.min(mTotal - mPosition,args.capacity());
             }
             args.limit(receiveLength);
-
+            return args;
         }
+
         @Override
-        public void onCompleted(IoArgs args) {
+        public void onConsumeCompleted(IoArgs args) {
             //解析packet 和 接收下一个包
             assemblePacket(args);
             readNextPacket();
         }
+
+
     };
 
     @Override

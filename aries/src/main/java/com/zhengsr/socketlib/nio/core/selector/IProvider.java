@@ -37,18 +37,11 @@ public interface IProvider extends Closeable{
      */
     abstract class HandleOutputRunnable implements Runnable{
         //用来关联数据，比如 string
-        Object attach;
+
         @Override
         public final void run() {
             //具体操作放在线程
             canProviderOutput();
-        }
-        public void setAttach(Object attach){
-            this.attach = attach;
-        }
-
-        public <T extends Object> T getAttach() {
-            return (T) attach;
         }
 
         public abstract void canProviderOutput();

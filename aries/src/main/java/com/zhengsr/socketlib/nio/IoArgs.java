@@ -119,14 +119,8 @@ public class IoArgs {
      */
     public interface IoArgsEventProcessor{
         //ioargs提供者
-        /*IoArgs providerIoArgs();
+        IoArgs providerIoArgs();
 
-        void onConsumeFailed(IoArgs args);
-        *//**
-         * 消费成功
-         *//*
-        void onConsumeCompleted(IoArgs args);*/
-        void onStart(IoArgs args);
-        void onCompleted(IoArgs args);
+        void onConsumeCompleted(IoArgs args);
     }
 }
