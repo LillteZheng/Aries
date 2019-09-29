@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author by  zhengshaorui on 2019/9/27
- * Describe:
+ * Describe:处理消息黏包和消息不完整的具体发送类
  */
 public class SendDispatcherAsync implements Closeable{
     private static final String TAG = "SendDispatcherAsync";
@@ -35,6 +35,7 @@ public class SendDispatcherAsync implements Closeable{
     private SendPacket mTempPacket;
     public SendDispatcherAsync(Sender sender) {
         mSender = sender;
+        mSender.setSendListener(ioArgsEventProcessor);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
             mQueue = new ConcurrentLinkedDeque<>();
         }else{
@@ -91,7 +92,7 @@ public class SendDispatcherAsync implements Closeable{
         args.finishWriting();
         //这样就构成了 [header][data+data..] 的形式
         try {
-            mSender.sendAsync(args,ioArgsEventProcessor);
+            mSender.sendAsync(args);
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -32,18 +32,23 @@ public class ChannelProviderProcessor implements Sender,Receiver {
     }
 
     @Override
-    public void sendAsync(IoArgs ioArgs, IoArgs.IoArgsEventProcessor processor) throws IOException {
+    public void setSendListener(IoArgs.IoArgsEventProcessor processor) {
+        mOutputEventProcessor = processor;
+    }
+
+    @Override
+    public void setReceiveListener(IoArgs.IoArgsEventProcessor processor) {
+        mInputEventProcessor = processor;
+    }
+
+    @Override
+    public void sendAsync(IoArgs ioArgs) throws IOException {
         if (mIsClosed.get()){
             throw  new IOException("current channel is closed");
         }
         outputRunnable.setAttach(ioArgs);
-        mOutputEventProcessor = processor;
-        mProvider.registerOutput(mChannel,outputRunnable);
-    }
 
-    @Override
-    public void setProcessorListener(IoArgs.IoArgsEventProcessor processor) {
-        mInputEventProcessor = processor;
+        mProvider.registerOutput(mChannel,outputRunnable);
     }
 
     @Override
@@ -127,6 +132,8 @@ public class ChannelProviderProcessor implements Sender,Receiver {
             }
         }
     }
+
+
 
     public interface OnChannelStatusChangedListener {
         void onChannelClosed(SocketChannel channel);

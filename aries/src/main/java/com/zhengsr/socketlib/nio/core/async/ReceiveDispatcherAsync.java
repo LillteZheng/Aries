@@ -4,16 +4,13 @@ import com.zhengsr.socketlib.nio.IoArgs;
 import com.zhengsr.socketlib.nio.core.callback.Receiver;
 import com.zhengsr.socketlib.nio.core.packet.ReceivePacket;
 import com.zhengsr.socketlib.nio.core.packet.box.StringReceivePacket;
-import com.zhengsr.socketlib.utils.Lgg;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author by  zhengshaorui on 2019/9/27
- * Describe:
+ * Describe: 处理消息黏包和消息不完整的具体接收类
  */
 public class ReceiveDispatcherAsync implements Closeable {
     private Receiver mReceiver;
@@ -26,7 +23,7 @@ public class ReceiveDispatcherAsync implements Closeable {
     public ReceiveDispatcherAsync(Receiver receiver,onReceivePacketListener listener) {
         this.mReceiver = receiver;
         mOnReceivePacketListener = listener;
-        mReceiver.setProcessorListener(processor);
+        mReceiver.setReceiveListener(processor);
         readNextPacket();
     }
 

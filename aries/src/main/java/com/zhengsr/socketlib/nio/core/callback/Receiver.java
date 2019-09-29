@@ -10,6 +10,6 @@ import java.io.IOException;
  * Describe: 接受者上层，传递 Ioargs
  */
 public interface Receiver  extends Closeable{
-    void setProcessorListener(IoArgs.IoArgsEventProcessor processor);
+    void setReceiveListener(IoArgs.IoArgsEventProcessor processor);
     void receiveAsync(IoArgs args) throws IOException;
 }

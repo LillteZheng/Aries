@@ -10,5 +10,6 @@ import java.io.IOException;
  * Describe:发送者上层，传递 Ioargs
  */
 public interface Sender extends Closeable{
-    void sendAsync(IoArgs ioArgs, IoArgs.IoArgsEventProcessor processor) throws IOException;
+    void setSendListener(IoArgs.IoArgsEventProcessor processor);
+    void sendAsync(IoArgs ioArgs) throws IOException;
 }
