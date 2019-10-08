@@ -45,7 +45,6 @@ public class ChannelProviderProcessor implements Sender,Receiver {
         if (mIsClosed.get()){
             throw  new IOException("current channel is closed");
         }
-        //outputRunnable.setAttach(ioArgs);
 
         mProvider.registerOutput(mChannel,outputRunnable);
     }

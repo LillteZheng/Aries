@@ -1,16 +1,17 @@
 package com.zhengsr.socketlib.nio.core.async;
 
 import android.os.Build;
-import android.util.Log;
 
 import com.zhengsr.socketlib.nio.IoArgs;
 import com.zhengsr.socketlib.nio.core.callback.Sender;
 import com.zhengsr.socketlib.nio.core.packet.SendPacket;
 import com.zhengsr.socketlib.utils.CloseUtils;
-import com.zhengsr.socketlib.utils.Lgg;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -28,11 +29,12 @@ public class SendDispatcherAsync implements Closeable{
     /**
      * 长度和进度
      */
-    private int mTotal;
-    private int mPosition;
+    private long mTotal;
+    private long mPosition;
     private Sender mSender;
     private IoArgs mIoArgs = new IoArgs();
     private SendPacket mTempPacket;
+    private ReadableByteChannel mTempChannel;
     public SendDispatcherAsync(Sender sender) {
         mSender = sender;
         mSender.setSendListener(ioArgsEventProcessor);
@@ -74,6 +76,7 @@ public class SendDispatcherAsync implements Closeable{
     private void sendCurrentPacket(IoArgs args) {
 
         if (mPosition >= mTotal){
+            consumeSuccess();
             sendNextPacket();
             return;
         }
@@ -84,6 +87,15 @@ public class SendDispatcherAsync implements Closeable{
         }
     }
 
+    private void consumeSuccess() {
+        CloseUtils.close(mTempChannel);
+        CloseUtils.close(mTempPacket);
+        mTempChannel = null;
+        mTempPacket = null;
+        mTotal = 0;
+        mPosition = 0;
+    }
+
 
     IoArgs.IoArgsEventProcessor ioArgsEventProcessor = new IoArgs.IoArgsEventProcessor() {
 
@@ -91,19 +103,25 @@ public class SendDispatcherAsync implements Closeable{
         public IoArgs providerIoArgs() {
             //把数据写到 ioargs ,再通过它传递给 provider 去消费
             IoArgs args = mIoArgs;
-            //先清掉以前的数据
-            args.startWriting();
 
-            if (mPosition == 0){
-                //如果是首包,把长度信息写入
-                args.writeLength(mTotal);
+            //如果byte通道为空，则为首包
+            if (mTempChannel == null) {
+                mTempChannel = Channels.newChannel((InputStream) mTempPacket.open());
+                //因为是channel写数据，需要对bytebuffer进行数据限制
+                //而之前byte数组的，已经在ioargs处理过，所以不需要
+                args.limit(4);
+                args.writeLength((int) mTotal);
+            }else{
+                args.limit((int) Math.min(args.capacity(),mTotal - mPosition));
+                try {
+                    int count = args.readFrom(mTempChannel);
+                    mPosition += count;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return null;
+                }
             }
 
-            byte[] bytes = mTempPacket.bytes();
-            //把数据写入到buffer中，并通过 args 传递给channel
-            int count = args.readFrom(bytes,mPosition);
-            mPosition += count;
-            args.finishWriting();
             //这样就构成了 [header][data+data..] 的形式
             return args;
         }
@@ -120,8 +138,8 @@ public class SendDispatcherAsync implements Closeable{
     public void close() throws IOException {
         if (mIsSending.compareAndSet(false,true)) {
             mIsSending.set(false);
-            mTempPacket = null;
             mQueue.clear();
+            consumeSuccess();
         }
     }
 }

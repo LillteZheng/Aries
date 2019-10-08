@@ -4,9 +4,12 @@ import com.zhengsr.socketlib.nio.IoArgs;
 import com.zhengsr.socketlib.nio.core.callback.Receiver;
 import com.zhengsr.socketlib.nio.core.packet.ReceivePacket;
 import com.zhengsr.socketlib.nio.core.packet.box.StringReceivePacket;
+import com.zhengsr.socketlib.utils.CloseUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 
 /**
  * @author by  zhengshaorui on 2019/9/27
@@ -15,9 +18,9 @@ import java.io.IOException;
 public class ReceiveDispatcherAsync implements Closeable {
     private Receiver mReceiver;
     private IoArgs mIoArgs = new IoArgs();
-    private ReceivePacket mTempPacket;
-    private int mTotal,mPosition;
-    private byte[] mBuffer ;
+    private ReceivePacket<?> mTempPacket;
+    private WritableByteChannel mTempChannel;
+    private long mTotal,mPosition;
 
     private onReceivePacketListener mOnReceivePacketListener;
     public ReceiveDispatcherAsync(Receiver receiver,onReceivePacketListener listener) {
@@ -47,24 +50,40 @@ public class ReceiveDispatcherAsync implements Closeable {
             mTempPacket = new StringReceivePacket(length);
             mTotal = length;
             mPosition = 0;
-            //创建需要的数组大小
-            mBuffer = new byte[length];
+            mTempChannel = Channels.newChannel(mTempPacket.open());
         }else{
             //data部分,要把args的数据，拿出来放到 byte[]里面
-            int count = args.writeTo(mBuffer);
-            if (count > 0) {
-                mTempPacket.save(mBuffer, count);
-                mPosition += count;
-                if (mPosition >= mTotal) {
-                    //已经完成了一份 packet 的接收
-                    if (mOnReceivePacketListener != null) {
-                        mOnReceivePacketListener.onReceiver(mTempPacket);
+
+            try {
+                int count = args.writeTo(mTempChannel);
+                if (count > 0) {
+                    mPosition += count;
+                    if (mPosition >= mTotal) {
+                        //已经完成了一份 packet 的接收
+                        consumeSuccess();
+
                     }
-                    mTempPacket = null;
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+
         }
 
+    }
+
+    private void consumeSuccess() {
+        ReceivePacket packet = mTempPacket;
+        CloseUtils.close(mTempChannel);
+        CloseUtils.close(packet);
+        mTempChannel = null;
+        mTempPacket = null;
+        mTotal = 0;
+        mPosition = 0;
+        //用临时变量，清空全局变量
+        if (mOnReceivePacketListener != null) {
+            mOnReceivePacketListener.onReceiver(packet);
+        }
     }
 
     IoArgs.IoArgsEventProcessor processor = new IoArgs.IoArgsEventProcessor() {
@@ -75,8 +94,9 @@ public class ReceiveDispatcherAsync implements Closeable {
             if (mTempPacket == null){
                 receiveLength = 4;
             }else{
-                receiveLength = Math.min(mTotal - mPosition,args.capacity());
+                receiveLength = (int) Math.min(mTotal - mPosition,args.capacity());
             }
+            //构建 [header][data][data]
             args.limit(receiveLength);
             return args;
         }
@@ -93,8 +113,7 @@ public class ReceiveDispatcherAsync implements Closeable {
 
     @Override
     public void close() throws IOException {
-        mTempPacket = null;
-
+        consumeSuccess();
     }
 
     public interface onReceivePacketListener{
